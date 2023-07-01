@@ -1,38 +1,50 @@
 import React, { useState,useEffect } from 'react';
 import Appheader from './Appheader';
+import axios from 'axios';
 
-function AddProductForm(props) {
+function AddProductForm() {
   const [products, setProducts] = useState([]);
+  const [quantity, setQuantity] = useState();
+
   useEffect(() => {
+    
     // Fetch product data from backend API
     fetch('http://localhost:4000/api/products')
+
       .then(response => response.json())
       .then(data => setProducts(data));
   }, []);
 
-
-  const handleUpdate = async (productId, newQuantity) => {
-    const response = await fetch(`http://localhost:4000/products/${productId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ quantity: newQuantity }),
-    });
-    console.log(response)
-    const data = await response.json();
-    console.log('Server response:', data);
-    // Update the product list with the new quantity
-    setProducts(products.map(product => {
-      if (product.id === productId) {
-        return { ...product, quantity: newQuantity };
-      } else {
-        return product;
-      }
-    }));
+  const handleUpdate = async (id, newQuantity) => {
+    try {
+      const response = await axios.put(`http://localhost:4000/products/${id}`, { quantity: newQuantity });
+      console.log(response.data); // success message from the server
+  
+      // Update the product list with the new quantity
+      setProducts(prevProducts =>
+        prevProducts.map(product => {
+          if (product.id === id) {
+            return { ...product, quantity: newQuantity };
+          } else {
+            return product;
+          }
+        })
+      );
+    } catch (error) {
+      console.log(error.response.data); // error message from the server
+    }
   };
+  
+  function handleDelete(name) {
+    axios.delete(`http://localhost:4000/delete-product/${name}`)
+      .then(response => {
+        console.log(response.data); // success message from the server
+      })
+      .catch(error => {
+        console.log(error.response.data); // error message from the server
+      });
+  }
   const [name, setName] = useState('');
-  const [quantity, setQuantity] = useState();
   const handleSubmit = async (event) => {
     event.preventDefault();
     const response = await fetch('http://localhost:4000/Add-product', {
@@ -70,34 +82,40 @@ function AddProductForm(props) {
 
     </form>  
 
-        <div>
-        <table>
-        <tr>
-          <th>name</th>
-          <th>quantity</th>
-          <th>Edit quantity </th>
-  
+    <div>
+  <table>
+    <thead>
+      <tr>
+        <th>name</th>
+        <th>quantity</th>
+        <th>Edit quantity</th>
+      </tr>
+    </thead>
+    <tbody>
+      {products.map((product) => (
+        <tr key={product.id}>
+          <td>{product.name}</td>
+          <td>{product.quantity}</td>
+          <td>
+            <input
+              type="number"
+              defaultValue={product.quantity}
+              onChange={(event) => {
+                const newQuantity = Number(event.target.value);
+                handleUpdate(product.id, newQuantity);
+              }}
+            />
+            <button onClick={() => handleUpdate(product.id, product.quantity)}>Update</button>
+          </td>
+          <td>
+            <button onClick={() => handleDelete(product.id)}>Delete</button>
+          </td>
         </tr>
-        <tbody>
-        {products.map(product => (
-          <tr key={product.id}>
-            <td>{product.name}</td>
-            <td>{product.quantity}</td>
-                <td>
-                  <input
-                    type="number"
-                    value={quantity}
-                    onChange={(event) => setQuantity(Number(event.target.value))}
+      ))}
+    </tbody>
+  </table>
+</div>
 
-                  />
-      <button onClick={() => handleUpdate(product.id, quantity)}>Update</button>
-                </td>{console.log(quantity)}
-              </tr>
-            ))}
-    
-      </tbody>
-        </table>
-    </div>
     </div>
   );
 }

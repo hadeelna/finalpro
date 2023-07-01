@@ -6,10 +6,12 @@ const Appheader = () => {
 <header>
   <nav>
     <ul>
-    <li><a href="/packges">packges</a></li>
+    <li><a href="/products">ניהול מלאי</a></li>
+    <li><a href="/Add">חבילות</a></li>
+    <li><a href="/o"> ההזמנות</a></li>
+      <li><a href="/Deliverypersons">שליח</a></li>
+      <li><a href="/customers">לקוחות</a></li>
 
-      <li><a href="/products">Products table</a></li>
-      <li><a href="/Deliverypersonlist">Deliverypersonlist</a></li>
     </ul>
   </nav>
 </header>

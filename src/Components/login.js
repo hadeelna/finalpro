@@ -1,59 +1,50 @@
-import React from 'react'
-import { useState } from 'react'
-import {  useNavigate } from "react-router-dom";
+import React, { useState } from 'react';
+import axios from 'axios';
 
 const Login = () => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
 
-    const [username,setUsername]=useState("")
-    const [password,setPassword]=useState("")
-    const navigate = useNavigate();
+  const handleLogin = async (e) => {
+    e.preventDefault();
 
-    const handleSubmit = async (event) => {
-        event.preventDefault();
-    
-        try {
-          const response = await fetch('http://localhost:4000/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ username, password })
+    try {
+      const response = await axios.post('http://localhost:4000/login', { username, password });
+      const { token, userType } = response.data;
 
-          }); console.log("Request data: ", JSON.stringify({ username, password }));
+      // Store the token and user type in the browser's localStorage
+      localStorage.setItem('token', token);
+      localStorage.setItem('userType', userType);
 
-          console.log(response);
-        
-          if (response.ok) {
-            navigate("/products");
-
-            console.log(response);
-          } else if (response.status === 401) {
-            console.error('Error: Invalid username or password');
-          } else {
-            console.error(`Error: ${response.status} ${response.statusText}`);
-          }
-        } catch (error) {
-          console.error(`Network error: `);
-        }
-        
-
-    }			    
+      // Redirect to appropriate page based on user type
+      if (userType === 'admin') {
+        window.location.href = '/products'; // Redirect to admin page
+       } else {
+        window.location.href = '/DeliveryPersonOrders'; // Redirect to default page for other user types
+      }
+    } catch (error) {
+      console.error('Failed to login:', error);
+    }
+  };
 
   return (
-    <form onSubmit={handleSubmit}>
-    <label>
-      Username:
-      <input type="text" value={username} onChange={(event) => setUsername(event.target.value)} />
-    </label>
-    <br />
-    <label>
-      Password:
-      <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
-    </label>
-    <br />
-    <button type="submit">Login</button>
-    <a href="/signup"> click to sign up</a>  </form>
-  )
-}
+    <div>
+      <h2>Login</h2>
+      <form onSubmit={handleLogin}>
+        <label>
+          Username:
+          <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} />
+        </label>
+        <br />
+        <label>
+          Password:
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        </label>
+        <br />
+        <button type="submit">Login</button>
+      </form>
+    </div>
+  );
+};
 
-export default Login
+export default Login;
