@@ -10,7 +10,6 @@ function Logout() {
       window.location.href = '/'; 
     } catch (error) {
       console.error('Failed to logout:', error);
-      // Handle any errors that may occur during logout.
     }
   };
 

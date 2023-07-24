@@ -1,5 +1,5 @@
 import React from 'react'
-import styles from './headr.css'
+import styles from './headr.module.css'
 import axios from 'react'
 
 const Appheader = () => {
@@ -11,7 +11,6 @@ const Appheader = () => {
         window.location.href = '/'; 
       } catch (error) {
         console.error('Failed to logout:', error);
-        // Handle any errors that may occur during logout.
       }
     };
   
@@ -26,8 +25,10 @@ const Appheader = () => {
     <li><a href="/o"> ההזמנות</a></li>
       <li><a href="/Deliverypersons">שליח</a></li>
       <li><a href="/customers">לקוחות</a></li>
-      <button onClick={handleLogout}>Logout</button>
+      <div className={styles.logoutcontainer}>
 
+      <button className={styles.logoutbutton} onClick={handleLogout}>Logout</button>
+</div>
     </ul>
   </nav>
 </header>

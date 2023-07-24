@@ -1,0 +1,41 @@
+header {
+    background-color: #333;
+    color: #fff;
+    height: 60px;
+  }
+  
+  nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  
+  nav li {
+    display: inline-block;
+    margin-right: 20px;
+  }
+  
+  nav a {
+    color: #fff;
+    text-decoration: none;
+  }
+  .logoutbutton {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #ff4500;
+    color: #fff;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    
+  }
+  
+  .logoutbutton:hover {
+    background-color: #ff6347;
+  }
+  .logoutcontainer {
+    display: grid;
+    place-items: end; /* This will position the LogoutButton at the end (right) of the container */
+  }

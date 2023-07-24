@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-
+import styles from './del.module.css'
 function DeliveryPersonOrders() {
   const [phone, setPhone] = useState('');
   const [orders, setOrders] = useState([]);
   const [forceUpdate, setForceUpdate] = useState(false);
   const [payment, setPayment] = useState('');
 
-  const handlePaymentChange = (event) => {
-    setPayment(event.target.value);
+  const handlePaymentChange = (event,orderId) => {
+    const updatedOrders = orders.map((order) =>
+      order.id === orderId ? { ...order, payment: event.target.value } : order
+    );
+    setOrders(updatedOrders);
   };
 
   const submitPayment = async (customerId, newPayment) => {
@@ -61,12 +64,28 @@ function DeliveryPersonOrders() {
     }
   };
 
+      const handleLogout = async () => {
+        try {
+          await axios.post('  http://localhost:4000/logout');
+       
+          document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          window.location.href = '/'; 
+        } catch (error) {
+          console.error('Failed to logout:', error);
+        }
+      };
+    
+    
   const handlePhoneChange = (event) => {
     setPhone(event.target.value);
   };
 
   return (
     <div>
+           <div className={styles.logoutcontainer}>
+
+<button className={styles.logoutbutton} onClick={handleLogout}>Logout</button>
+</div>
       <h3>אנא הקליד את מס הטלפון</h3>
       <input type="text" value={phone} onChange={handlePhoneChange} />
       <button onClick={fetchDeliveryPersonOrders}>Fetch Orders</button>
@@ -83,7 +102,8 @@ function DeliveryPersonOrders() {
               <td>{order.payment}</td>
               <td>
 
-              <input type="text" value={payment} onChange={handlePaymentChange} />
+              <input type="text" value={payment} className={styles.i}onChange={(event) => handlePaymentChange(event, order.id)}
+ />
               <button onClick={() => submitPayment(order.cid, payment)}>Submit Payment</button>
               </td>
               <td>
