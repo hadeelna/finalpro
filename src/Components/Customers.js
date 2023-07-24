@@ -8,7 +8,7 @@ const Customers = () => {
   const [status, setstatus] = useState('');
   const [phone_number, setPhone_number] = useState('');
   const [address, setaddress] = useState('');
-  const [deliveryperson_id, setdeliveryperson] = useState(1);
+  const [deliveryperson_id, setdeliveryperson] = useState();
   useEffect(() => {
     fetchCustomers();
   }, []);
@@ -67,7 +67,6 @@ const Customers = () => {
   return (
     <div>
       <Appheader/>
-      <h2>רשימת לקוחות</h2>
       <table>
         <thead>
           <tr>
@@ -76,7 +75,7 @@ const Customers = () => {
             <th>כתובת</th>
             <th>סטאטוס</th>
             <th>שליח</th>
-            <th>פעולות</th>
+            <th>תשלום</th>
 
           </tr>
         </thead>
@@ -87,10 +86,9 @@ const Customers = () => {
               <td>{customer.phone_number}</td>
               <td>{customer.address}</td>
               <td>{customer.status}</td>
-              <td>{customer.name}</td>
+              <td>{customer.deliveryperson_name}</td>
+              <td>{customer.payment}</td>
               {console.log(customer.name)}
-
-
               <td>
                 <button onClick={() => deleteCustomer(customer.id)}>מחיקה</button>
                 <button onClick={() => updateCustomer(customer.id)}>עדכון</button>
@@ -100,34 +98,34 @@ const Customers = () => {
         </tbody>
       </table>
 
-      <h2>Add Customer</h2>
+      <h3>להוספת לקוח </h3>
       <input
         type="text"
-        placeholder="Name"
+        placeholder="שם מלא"
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
       <input
         type="phone_number"
-        placeholder="Phone_number"
+        placeholder="מס טלפון"
         value={phone_number}
         onChange={(e) => setPhone_number(e.target.value)}
       />
          <input
         type="text"
-        placeholder="address"
+        placeholder="כתובת"
         value={address}
         onChange={(e) => setaddress(e.target.value)}
       /> 
             <input
       type="text"
-      placeholder="status"
+      placeholder="סטאטוס"
       value={status}
       onChange={(e) => setstatus(e.target.value)}
     />
            <input
         type="text"
-        placeholder="deliveryperson"
+        placeholder="שם השליח"
         value={deliveryperson_id}
         onChange={(e) => setdeliveryperson(e.target.value)}
       />

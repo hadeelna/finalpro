@@ -8,7 +8,7 @@ import Deliverypersons from './Components/Deliverypersons';
 import Addpa from './Components/Addpa';
 import Orders from './Components/Orders';
 import Customers from './Components/Customers';
-
+import Logout from './Components/Logout';
 function App() {
   return (
    <div>
@@ -20,6 +20,8 @@ function App() {
         <Route path="/Add" element={<Addpa/>} ></Route>
         <Route path="/o" element={<Orders/>} ></Route>
         <Route path="/customers" element={<Customers/>} ></Route>
+        <Route path="/logout" element={<Logout/>} ></Route>
+
 
         <Route path="/DeliveryPersonOrders" element={<DeliveryPersonOrders/>} ></Route>
 

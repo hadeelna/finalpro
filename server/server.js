@@ -8,6 +8,9 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 const jwt = require('jsonwebtoken');
 app.use(cors());
+const TWILIO_ACCOUNT_SID = 'AC13ac9f199b3db1f18fc64d83e17bb1b4';
+const TWILIO_AUTH_TOKEN = '214d489baa26af07e43638d7bb5a7087';
+const twilioPhoneNumber = '++14325476061';
 
 
 
@@ -91,6 +94,20 @@ app.post('/login', async (req, res) => {
     res.status(500).json({ message: 'Failed to login' });
   }
 });
+app.post('/logout', (req, res) => {
+  try {
+    // Clear the authentication token by setting it to an empty string or null
+    // You can also invalidate the token on the server-side if required
+    // For this example, we will simply clear the token from the client-side
+    res.clearCookie('token');
+
+    res.status(200).json({ message: 'Logout successful' });
+  } catch (error) {
+    console.error('Failed to logout:', error);
+    res.status(500).json({ message: 'Failed to logout' });
+  }
+});
+
 app.post('/Add-product', (req, res) => {
   console.log('Received request:', req.body);
   const { name, quantity } = req.body;
@@ -137,7 +154,7 @@ app.delete('/delete-product/:id', (req, res) => {
 app.put('/products/:id', (req, res) => {
   const productId = req.params.id;
   const newQuantity = req.body.quantity;
-  const sql = 'UPDATE products SET quantity = ?  WHERE id = ?';
+  const sql = 'UPDATE products SET quantity =  quantity + ?  WHERE id = ?';
   connection.query(sql, [newQuantity, productId], (error, results, fields) => {
     if (error) throw error;
     console.log(`Product with id ${productId} updated with quantity ${newQuantity}`);
@@ -169,28 +186,42 @@ app.get("/type", (req, res) => {
 
 
 app.post('/package_products2/add-product-by-name', (req, res) => {
-  const { package_id, name, quantity } = req.body;
-  if (!package_id || !name || !quantity) {
+  const { type, name, quantity } = req.body;
+  if (!type || !name || !quantity) {
     return res.status(400).json({ message: 'Invalid request parameters' });
   }
-
-  const insertQuery = 'INSERT INTO package_products2 (package_id, product_id, quantity) SELECT ?, id, ? FROM products WHERE name = ?';
-  const values = [package_id, quantity, name];
-  console.log(values)
-  connection.query(insertQuery, values, (error, results, fields) => {
+  const findPackageQuery = 'SELECT id FROM packgest WHERE type = ?';   
+  connection.query(findPackageQuery, [type], (error, packageResults) => {
     if (error) {
       console.error(error);
-      res.status(500).json({ message: 'Failed to add product to package' });
-    } else {
-      if (results.affectedRows === 0) {
-        res.status(404).json({ message: `Product '${name}' not found` });
-      } else {
-        console.log(`Product ${name} added to package successfully`);
-        res.status(200).json({ message: 'Product added to package successfully' });
-      }
+      return res.status(500).json({ message: 'Failed to find package' });
     }
-  });
 
+    if (packageResults.length === 0) {
+      return res.status(404).json({ message: `Package type '${type}' not found` });
+    }
+
+    // Package found, get the package_id
+    const package_id = packageResults[0].id;
+
+    // Next, insert the product to package_products2 table
+    const insertQuery = 'INSERT INTO package_products2 (package_id, product_id, quantity) SELECT ?, id, ? FROM products WHERE name = ?';
+    const values = [package_id, quantity, name];
+    console.log(values)
+    connection.query(insertQuery, values, (error, results, fields) => {
+      if (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to add product to package' });
+      } else {
+        if (results.affectedRows === 0) {
+          res.status(404).json({ message: `Product '${name}' not found` });
+        } else {
+          console.log(`Product ${name} added to package successfully`);
+          res.status(200).json({ message: 'Product added to package successfully' });
+        }
+      }
+    });
+  });
 });
 
 app.get("/package_products2", (req, res) => {
@@ -201,7 +232,7 @@ app.get("/package_products2", (req, res) => {
   });
 });
 app.get("/Allorders", (req, res) => {
-  const sql = "SELECT orders.id, packgest.type,  DATE_FORMAT(orders.order_date, '%Y-%m-%d') AS order_date, customers.cuname, orders.status FROM orders JOIN customers ON orders.customer_id = customers.id JOIN packgest ON orders.package_id = packgest.id";
+  const sql = "SELECT orders.id, packgest.type,  DATE_FORMAT(orders.order_date, '%Y-%m-%d') AS order_date, customers.cuname, orders.status FROM orders JOIN customers ON orders.customer_id = customers.cid JOIN packgest ON orders.package_id = packgest.id";
   connection.query(sql, (err, results) => {
     if (err) throw err;
     res.send(results)
@@ -216,13 +247,13 @@ app.get("/package", (req, res) => {
 });
 app.post('/orders', (req, res) => {
   const { package_id, order_date } = req.body;
-  const selectQuery = `SELECT id FROM customers WHERE status = 'ACTIVE'`;
+  const selectQuery = `SELECT cid FROM customers WHERE status = 'ACTIVE'`;
   connection.query(selectQuery, (error, results) => {
     if (error) {
       console.error('Failed to retrieve active customers:', error);
       return res.status(500).json({ message: 'Failed to create orders' });
     }
-    const activeCustomerIds = results.map((row) => row.id);
+    const activeCustomerIds = results.map((row) => row.cid);
     console.log(activeCustomerIds);
 
     if (activeCustomerIds.length === 0) {
@@ -230,15 +261,13 @@ app.post('/orders', (req, res) => {
       return res.status(404).json({ message: 'No active customers found' });
     }
 
-    const insertQuery = `INSERT INTO orders (id, package_id, customer_id, order_date, status) VALUES ?`;
+    const insertQuery = `INSERT INTO orders (package_id, customer_id, order_date, status) VALUES ?`;
 
-    const values = activeCustomerIds.map((customerId, index) => [
-      generateOrderId(index + 1),
+    const values = activeCustomerIds.map((customerId) => [
       package_id,
       customerId,
       order_date,
       'בהכנה' // או ערך התחלתי אחר שאתה רוצה
-
     ]);
 
     function generateOrderId(orderIndex) {
@@ -271,35 +300,117 @@ app.put('/orders2/:id/status', (req, res) => {
     res.json({ message: 'Order status updated successfully' });
   });
 });
+ 
+
+
+
+
+
+
+// כאן כמובן נכניס את כל שאר הקוד שלך להגדרת ה-Route
+
 app.put('/orders/:id/status', (req, res) => {
   const orderId = req.params.id;
-  const newStatus = 'מוכנה'; // הערך הקבוע שתרצה לעדכן לסטאטוס ההזמנה
-
+  const newStatus = 'מוכנה';
   const updateQuery = 'UPDATE orders SET status = ? WHERE id = ?';
+  const selectAvailableDeliveryPersonsQuery = `
+    SELECT phone_number
+    FROM deliveryperson
+    WHERE phone_number IN (
+      SELECT phone_number
+      FROM orders
+      WHERE status = 'מוכנה'
+        AND phone_number IS NOT NULL
+    )
+  `;
+
   connection.query(updateQuery, [newStatus, orderId], (error, result) => {
     if (error) {
       console.error('Failed to update order status:', error);
       return res.status(500).json({ message: 'Failed to update order status' });
     }
-    res.json({ message: 'Order status updated successfully' });
+
+    if (result.affectedRows === 1) {
+      connection.query(selectAvailableDeliveryPersonsQuery, (error, deliverypersons) => {
+        if (error) {
+          console.error('Failed to fetch couriers:', error);
+          return res.status(500).json({ message: 'Failed to fetch couriers' });
+        }
+
+        if (!deliverypersons || deliverypersons.length === 0) {
+          console.log('No available courier found.');
+          return res.json({ message: 'Order status updated successfully, but no available courier found.' });
+        }
+
+        const phoneNumber = deliverypersons[0].phone_number;
+
+        // רשימת מספרי הטלפון שקיבלו כבר הודעה - עליו להיות מוגדר בקפיצה מקומית
+        let sentSMSNumbers = [];
+
+        // אם המספר טלפון כבר קיבל הודעה, נחזיר מהפונקציה מבלי לשלוח עוד הודעה
+        if (sentSMSNumbers.includes(phoneNumber)) {
+          console.log('SMS to', phoneNumber, 'was already sent, skipping.');
+          return res.json({ message: 'Order status updated successfully' });
+        }
+
+        const sendSMS = (message, phoneNumber) => {
+          // הוספת הקידומת +972 למספר הטלפון
+          const fullPhoneNumber = '+972' + phoneNumber;
+          const client = require('twilio')(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+          return client.messages.create({
+            body: message,
+            from: twilioPhoneNumber,
+            to: fullPhoneNumber, // שימוש במספר הטלפון עם הקידומת +972
+          });
+        };
+
+        const message = 'יש לך לפחות הזמנה אחת במצב "מוכנה" שאתה יכול לבוא לקחת.';
+        sendSMS(message, phoneNumber)
+          .then((messages) => {
+            console.log('SMS sent successfully:', messages);
+            // רק אם ההודעה נשלחה בהצלחה, נוסיף את המספר לרשימה של נשלחו הודעות
+            sentSMSNumbers.push(phoneNumber);
+            res.json({ message: 'Order status updated successfully, and SMS sent to couriers' });
+          })
+          .catch((error) => {
+            console.error('Failed to send SMS:', error);
+            res.status(500).json({ message: 'Failed to send SMS' });
+          });
+      });
+    } else {
+      res.json({ message: 'Order status updated successfully' });
+    }
   });
 });
+
+
+
+
 app.get('/delivery-persons/orders', (req, res) => {
   const { phone } = req.query;
-  const selectQuery = 
-  `SELECT orders.id, orders.package_id,  DATE_FORMAT(orders.order_date, '%Y-%m-%d') AS order_date, orders.status, customers.cuname,customers.address, customers.deliveryperson_id, deliveryperson.phone_number
-  FROM orders
-  JOIN customers ON orders.customer_id = customers.id
-  JOIN deliveryperson ON customers.deliveryperson_id = deliveryperson.id
-  WHERE (orders.status = 'מוכנה' OR orders.status = 'הלקוח קיבל')
-  AND deliveryperson.phone_number = ?`;
+
+  if (!phone) {
+    return res.status(400).json({ message: 'Phone number is missing in the request' });
+  }
+
+  const selectQuery = `
+    SELECT orders.id, orders.package_id, DATE_FORMAT(orders.order_date, '%Y-%m-%d') AS order_date, orders.status, customers.cid, customers.cuname, customers.address, customers.deliveryperson_id, customers.payment, deliveryperson.phone_number
+    FROM orders
+    JOIN customers ON orders.customer_id = customers.cid
+    JOIN deliveryperson ON customers.deliveryperson_id = deliveryperson.id
+    WHERE (orders.status = 'מוכנה' OR orders.status = 'הלקוח קיבל')
+    AND deliveryperson.phone_number = ?
+  `;
 
   connection.query(selectQuery, [phone], (error, results) => {
     if (error) {
       console.error('Failed to retrieve delivery person orders:', error);
       return res.status(500).json({ message: 'Failed to retrieve delivery person orders' });
     }
-    console.log(phone)
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'No orders found for the provided phone number' });
+    }
 
     res.json(results);
   });
@@ -307,20 +418,83 @@ app.get('/delivery-persons/orders', (req, res) => {
 
 
 
-app.post('/Add-pacakge', (req, res) => {
-  console.log('Received request:', req.body);
-  const { id, type } = req.body;
-  const ADD_QUERY = `INSERT INTO packgest (id,type) VALUES (?, ?)`;
-  connection.query(ADD_QUERY, [id, type], (err, result) => {
-    if (err) {
-      console.log('Error:', err);
-      res.status(500).send('Internal Server Error');
-    } else {
-      console.log('Result:', result);
-      res.send('product has been added');
+app.post('/customers/payment/:cid', (req, res) => {
+  const { cid } = req.params;
+  const { payment } = req.body;
+  const updateQuery = 'UPDATE customers SET payment = payment + ? WHERE cid = ?';
+  connection.query(updateQuery, [payment, cid], (error, results) => {
+    if (error) {
+      console.error('Failed to update customer payment:', error);
+      return res.status(500).json({ message: 'Failed to update customer payment' });
     }
+
+    res.json({ message: 'Customer payment updated successfully' });
   });
 });
+
+app.post('/Add-pacakge', (req, res) => {
+  const { id, type } = req.body;
+  if (!id || !type) {
+    return res.status(400).json({ message: 'Invalid request parameters' });
+  }
+
+  // Check if the package type already exists in the database
+  const checkPackageQuery = 'SELECT * FROM packgest WHERE type = ?';
+  connection.query(checkPackageQuery, [type], (error, results) => {
+    if (error) {
+      console.error(error);
+      return res.status(500).json({ message: 'Failed to check package type' });
+    }
+
+    if (results.length > 0) {
+      // Package type already exists, return an error
+      return res.status(409).json({ message: `Package type '${type}' already exists` });
+    }
+
+    // Package type does not exist, insert it into the database
+    const insertQuery = 'INSERT INTO packgest (id, type) VALUES (?, ?)';
+    const values = [id, type];
+    connection.query(insertQuery, values, (error, results) => {
+      if (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Failed to add package type' });
+      }
+
+      console.log(`Package type '${type}' added successfully`);
+      res.status(200).json({ message: 'Package type added successfully' });
+    });
+  });
+});
+
+app.delete('/delete-package/:id', (req, res) => {
+  const packageId = req.params.id;
+  const deleteQueryPackageProducts2 = 'DELETE FROM package_products2 WHERE package_id = ?';
+  const deleteQueryPackgest = 'DELETE FROM packgest WHERE id = ?';
+  
+  connection.query(deleteQueryPackageProducts2, [packageId], (error, result) => {
+    if (error) {
+      console.error('Failed to delete package products:', error);
+      return res.status(500).json({ message: 'Failed to delete package products' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Package not found in package_products2' });
+    }
+    
+    // If package was deleted from package_products2, delete it from packgest as well
+    connection.query(deleteQueryPackgest, [packageId], (error, result) => {
+      if (error) {
+        console.error('Failed to delete package from packgest:', error);
+        return res.status(500).json({ message: 'Failed to delete package from packgest' });
+      }
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: 'Package not found in packgest' });
+      }
+      
+      res.json({ message: 'Package deleted successfully' });
+    });
+  });
+});
+
 app.post('/order-ready', (req, res) => {
   const selectQuery = `SELECT id FROM orders WHERE status = 'ready'`;
   connection.query(selectQuery, (error, results) => {
@@ -330,82 +504,143 @@ app.post('/order-ready', (req, res) => {
     }
   })
 })
-app.post('/update-product-quantities', (req, res) => {
-  const packageId = req.body.packageId;
-  // שאילתת ה-SQL לחישוב כמות המוצרים בחבילה
-  const packageQuantitiesQuery = `
-    SELECT package_id, SUM(quantity) AS totalQuantity
-    FROM package_products2
-    WHERE package_id = ?
-    GROUP BY package_id;
-  `;
-  // שאילתת ה-SQL לעדכון המלאי של המוצרים
-  const updateStockQuery = `
-    UPDATE products
-    SET quantity = quantity - (
-      SELECT SUM(quantity) AS totalQuantity
-      FROM package_products2
-      WHERE package_id = ?
-    )
-    WHERE id IN (
-      SELECT product_id
-      FROM package_products2
-      WHERE package_id = ?
-    ) AND quantity >= (
-      SELECT SUM(quantity) AS totalQuantity
-      FROM package_products2
-      WHERE package_id = ?
-    );
-  `;
 
-  // שאילתת ה-SQL לשליפת הכמות המעודכנת מהטבלה
-  const getUpdatedQuantityQuery = `
-    SELECT quantity
-    FROM products
-    WHERE id = ?;
-  `;
 
-  connection.query(packageQuantitiesQuery, [packageId], (packageErr, packageResults) => {
-    if (packageErr) {
-      console.error('Error calculating package quantities:', packageErr);
-      return res.status(500).json({ error: 'Failed to calculate package quantities' });
-    }
 
-    const packageQuantity = packageResults.length > 0 ? packageResults[0].totalQuantity : 0;
+//     SELECT COUNT(*) AS activeCustomersCount
+//     FROM customers
+//     WHERE status = 'ACTIVE';
+//   `;
 
-    connection.query(
-      updateStockQuery,
-      [packageId, packageId, packageId],
-      (updateErr, updateResults) => {
-        if (updateErr) {
-          console.error('Error updating product stock:', updateErr);
-          return res.status(500).json({ error: 'Failed to update product stock' });
-        }
+//   const packageQuantitiesQuery = `
+//     SELECT package_id, quantity AS totalQuantity
+//     FROM package_products2
+//     WHERE package_id = ?
+//     GROUP BY package_id;
+//   `;
 
-        connection.query(getUpdatedQuantityQuery, [packageId], (quantityErr, quantityResults) => {
-          if (quantityErr) {
-            console.error('Error retrieving updated quantity:', quantityErr);
-            return res.status(500).json({ error: 'Failed to retrieve updated quantity' });
-          }
+//   const updateStockQuery = `
+//     UPDATE products
+//     SET quantity = quantity - (
+//       SELECT SUM(package_products2.quantity) * activeCustomersCount
+//       FROM package_products2
+//       JOIN packgest ON package_products2.package_id = packgest.id
+//       JOIN orders ON orders.package_id = packgest.id
+//       JOIN customers ON customers.cid = orders.customer_id
+//       CROSS JOIN (${activeCustomersCountQuery}) AS activeCustomersCount
+//       WHERE packgest.id = ?
+//     )
+//     WHERE id IN (
+//       SELECT product_id
+//       FROM package_products2
+//       WHERE package_id = ?
+//     ) AND quantity >= (
+//       SELECT SUM(quantity) AS totalQuantity
+//       FROM package_products2
+//       WHERE package_id = ?
+//     );
+//   `;
 
-          const updatedQuantity = quantityResults.length > 0 ? quantityResults[0].quantity : 0;
+//   const getUpdatedQuantityQuery = `
+//     SELECT quantity
+//     FROM products
+//     WHERE id = ?;
+//   `;
 
-          console.log('Product stock updated successfully');
-          return res.status(200).json({ message: 'Product stock updated successfully', quantity: updatedQuantity });
-        });
+//   connection.query(activeCustomersCountQuery, (customerCountErr, customerCountResults) => {
+//     if (customerCountErr) {
+//       console.error('Error counting active customers:', customerCountErr);
+//       return res.status(500).json({ error: 'Failed to count active customers' });
+//     }
+
+//     const activeCustomersCount = customerCountResults.length > 0 ? customerCountResults[0].activeCustomersCount : 0;
+
+//     connection.query(packageQuantitiesQuery, [packageId], (packageErr, packageResults) => {
+//       if (packageErr) {
+//         console.error('Error calculating package quantities:', packageErr);
+//         return res.status(500).json({ error: 'Failed to calculate package quantities' });
+//       }
+
+//       const packageQuantity = packageResults.length > 0 ? packageResults[0].totalQuantity : 0;
+
+//       connection.query(
+//         updateStockQuery,
+//         [packageId, packageId, packageId],
+//         (updateErr, updateResults) => {
+//           if (updateErr) {
+//             console.error('Error updating product stock:', updateErr);
+//             return res.status(500).json({ error: 'Failed to update product stock' });
+//           }
+
+//           connection.query(getUpdatedQuantityQuery, [packageId], (quantityErr, quantityResults) => {
+//             if (quantityErr) {
+//               console.error('Error retrieving updated quantity:', quantityErr);
+//               return res.status(500).json({ error: 'Failed to retrieve updated quantity' });
+//             }
+
+//             const updatedQuantity = quantityResults.length > 0 ? quantityResults[0].quantity : 0;
+
+//             console.log('Product stock updated successfully');
+//             return res.status(200).json({ message: 'Product stock updated successfully', quantity: updatedQuantity });
+//           });
+//         }
+//       );
+//     });
+//   });
+
+//   });
+
+  const updateProductQuantities = (packageId) => {
+    // ביצוע השאילתה ועדכון הכמויות
+    const query = `
+      UPDATE products
+      SET quantity = quantity - (
+        SELECT SUM(pp.quantity) * ac.activeCustomersCount
+        FROM package_products2 pp
+        CROSS JOIN (
+          SELECT COUNT(*) AS activeCustomersCount
+          FROM customers
+          WHERE status = 'ACTIVE'
+        ) AS ac
+        WHERE pp.package_id = ?
+          AND products.id = pp.product_id
+      )
+      WHERE id IN (
+        SELECT product_id 
+        FROM package_products2 
+        WHERE package_id = ?
+      ) AND quantity >= (
+        SELECT SUM(pp.quantity)
+        FROM package_products2 pp
+        WHERE pp.package_id = ?
+          AND products.id = pp.product_id
+      );
+    `;
+    
+    connection.query(query, [packageId, packageId, packageId], (error, results) => {
+      if (error) {
+        console.error('Error updating product quantities:', error);
+        return;
       }
-    );
-  });
-});
+      
+      console.log('Product quantities updated successfully!');
+    });
+  };
+  app.post('/update-product-quantities', (req, res) => {
+    const packageId = req.body.packageId; // Access packageId from request body
+    updateProductQuantities(packageId);
+    res.send('Product quantities update initiated');
+
+})
+
 app.get('/customers', (req, res) => {
-
-
-  const selectQuery = "SELECT customers.id, customers.cuname, customers.phone_number, customers.status, customers.address, deliveryperson.name FROM customers JOIN deliveryperson ON customers.deliveryperson_id = deliveryperson.id;  "
+  const selectQuery=" SELECT customers.cid, customers.cuname, customers.phone_number, customers.status, customers.address, deliveryperson.name AS deliveryperson_name, customers.payment FROM customers JOIN deliveryperson ON customers.deliveryperson_id = deliveryperson.id";
   connection.query(selectQuery, (error, results) => {
     if (error) {
       console.error('Failed to retrieve customers:', error);
       return res.status(500).json({ message: 'Failed to retrieve customers' });
     }
+    console.log(results)
     res.json(results);
   });
 });
@@ -484,7 +719,7 @@ app.get('/deliverypersons', (req, res) => {
   });
 });
 
-// Add a new deliveryperson
+
 app.post('/deliverypersons', (req, res) => {
   const { name, phone_number } = req.body;
   const checkQuery = 'SELECT * FROM deliveryperson WHERE phone_number = ?';
@@ -509,6 +744,8 @@ app.post('/deliverypersons', (req, res) => {
         return res.status(500).json({ message: 'Failed to add deliveryperson' });
       }
       res.json({ message: 'Deliveryperson added successfully' });
+
+
     });
   });
 });
@@ -543,6 +780,33 @@ app.delete('/deliverypersons/:deliverypersonId', (req, res) => {
     res.json({ message: 'Deliveryperson deleted successfully' });
   });
 });
+
+app.delete('/orders/:orderId', (req, res) => {
+  const orderId = req.params.orderId;
+  const deleteQuery = 'DELETE FROM orders WHERE id = ?';
+
+  connection.query(deleteQuery, orderId, (error, results) => {
+    if (error) {
+      console.error('Failed to delete order:', error);
+      return res.status(500).json({ message: 'Failed to delete order' });
+    }
+    res.json({ message: 'order deleted successfully' });
+  });
+});
+app.delete('/orders', (req, res) => {
+  const deleteQuery = 'DELETE FROM orders';
+  
+  connection.query(deleteQuery, (error, results) => {
+    if (error) {
+      console.error('Failed to delete orders:', error);
+      return res.status(500).json({ message: 'Failed to delete orders' });
+    }
+    res.json({ message: 'All orders deleted successfully' });
+  });
+});
+
+
+
 
 
 

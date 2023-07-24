@@ -33,6 +33,23 @@ const Orders = () => {
       console.error('Failed to update order status:', error);
     }
   };
+
+  const deleteorder = async (orderId) => {
+    try {
+      const response = await axios.delete(`http://localhost:4000/orders/${orderId}`);
+      console.log(response.data);
+    } catch (error) {
+      console.error('Failed to delete orders:', error);
+    }
+  };
+  const deleteAllorders = async (ordeId) => {
+    try {
+      const response = await axios.delete(`http://localhost:4000/orders`);
+      console.log(response.data);
+    } catch (error) {
+      console.error('Failed to delete orders:', error);
+    }
+  };
   return (
        
   <div> 
@@ -45,12 +62,14 @@ const Orders = () => {
             <th>  תאריך </th>
             <th>   שם הלקח</th>
             <th> סטאטוס</th>
-            <th>כפתור</th>
+            <th> להזמנה מוכנה</th>
+            <th> למחיקה</th>
+
           </tr>
         </thead>
          <tbody>
           {orders.map((order,index) => (
-        <tr key={order.id}>
+        <tr key={order.id}>      
              <td>{order.id}</td>
               <td>{order.type}</td>
               <td>{order.order_date}</td>
@@ -59,13 +78,18 @@ const Orders = () => {
 
             <td> <button onClick={() => updateOrderStatus(order.id,order.status)}>להזמנה מוכנה</button>
             </td>     
-    
+            <td>
+            <button onClick={() => deleteorder(order.id)}> מחיקה  </button>
+            </td>
             </tr>
           ))}
         </tbody>  
 </table>
 <div>
+
         <button onClick={() => updateAllOrdersStatus('מוכנה')}>עדכן כל ההזמנות למוכנות</button>
+        <button onClick={() => deleteAllorders()}> מחיקת כל ההזמנות</button>
+
       </div>
   </div>
 

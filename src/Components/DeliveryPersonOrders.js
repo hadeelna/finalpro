@@ -5,6 +5,22 @@ function DeliveryPersonOrders() {
   const [phone, setPhone] = useState('');
   const [orders, setOrders] = useState([]);
   const [forceUpdate, setForceUpdate] = useState(false);
+  const [payment, setPayment] = useState('');
+
+  const handlePaymentChange = (event) => {
+    setPayment(event.target.value);
+  };
+
+  const submitPayment = async (customerId, newPayment) => {
+    try {
+      await axios.post(`http://localhost:4000/customers/payment/${customerId}`, { payment: newPayment });
+      console.log('Payment submitted successfully');
+    } catch (error) {
+      console.error('Failed to submit payment:', error);
+    }
+  };
+
+
 
   useEffect(() => {
     if (phone) {
@@ -12,6 +28,7 @@ function DeliveryPersonOrders() {
     }
   }, [phone]);
 
+  
   const fetchDeliveryPersonOrders = async () => {
     try {
       const response = await axios.get(`http://localhost:4000/delivery-persons/orders?phone=${phone}`);
@@ -62,19 +79,25 @@ function DeliveryPersonOrders() {
               <td>{order.order_date}</td>
               <td>{order.cuname}</td>
               <td>{order.address}</td>
-
               <td>{order.status}</td>
+              <td>{order.payment}</td>
+              <td>
+
+              <input type="text" value={payment} onChange={handlePaymentChange} />
+              <button onClick={() => submitPayment(order.cid, payment)}>Submit Payment</button>
+              </td>
               <td>
                 <button onClick={() => updateOrderStatus2(order.id, order.status)}>לאישור קבלת הלקוח</button>
               </td>
             </tr>
           ))}
         </tbody>
-        </table>
+      </table>
       <div>
         <button onClick={() => updateAllOrdersStatus2('הלקוח קיבל')}>עדכן כל ההזמנות שהתקבלו</button>
       </div>
     </div>
   );
 }
+
 export default DeliveryPersonOrders;

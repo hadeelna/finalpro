@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-
+import styles from './login.module.css'
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -29,20 +29,23 @@ const Login = () => {
 
   return (
     <div>
-      <h2>Login</h2>
+    <div className={styles.login} >
       <form onSubmit={handleLogin}>
         <label>
-          Username:
-          <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} />
+          שם משתמש:
+          <input type="text2" value={username} onChange={(e) => setUsername(e.target.value)} />
         </label>
         <br />
         <label>
-          Password:
+          סיסמא:
+          <br/>
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
         </label>
         <br />
-        <button type="submit">Login</button>
+        <button type="submit">כניסה</button>
       </form>
+      <a href='signup'>signup</a>
+    </div>
     </div>
   );
 };

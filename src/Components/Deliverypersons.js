@@ -60,7 +60,6 @@ const Deliverypersons = () => {
     <div>
       <Appheader/>
       <h2>רשימת שליחים</h2>
-
       <div>
         <input
           type="text"

@@ -1,0 +1,27 @@
+.form-label {
+    margin-bottom: 0.5em;
+  display:contents;
+}
+.form-container{
+    display: flex;
+  }
+
+  input {
+    width: 10%;
+    padding: 0.5em;
+    margin-bottom: 1em;
+    border: 0.1em solid #000000;
+    border-radius: 0.25em;
+
+  }
+  .form-button {
+    padding: 0.5em 0.5em;
+    background-color: #000000;
+    color: #fff;
+    border: none;
+    border-radius: 0.25em;
+    cursor: pointer;
+    margin-left: 2em;
+
+  }
+  

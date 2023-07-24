@@ -1,28 +1,35 @@
 import React, { useState,useEffect } from 'react';
 import Appheader from './Appheader';
 import axios from 'axios';
+import styles from './product.module.css';
 
 function AddProductForm() {
   const [products, setProducts] = useState([]);
   const [quantity, setQuantity] = useState();
 
-  useEffect(() => {
-    
-    // Fetch product data from backend API
+  useEffect(() => {    
     fetch('http://localhost:4000/api/products')
-
       .then(response => response.json())
-      .then(data => setProducts(data));
+      .then((data) => setProducts(data.map((product) => ({ ...product, localQuantity: product.quantity }))));
   }, []);
+  const handleQuantityChange = (productId, newQuantity) => {
+    setProducts((prevProducts) =>
+      prevProducts.map((product) => {
+        if (product.id === productId) {
+          return { ...product, localQuantity: newQuantity };
+        } else {
+          return product;
+        }
+      })
+    );
+  };
 
   const handleUpdate = async (id, newQuantity) => {
     try {
       const response = await axios.put(`http://localhost:4000/products/${id}`, { quantity: newQuantity });
-      console.log(response.data); // success message from the server
-  
-      // Update the product list with the new quantity
-      setProducts(prevProducts =>
-        prevProducts.map(product => {
+      console.log(response.data);
+      setProducts((prevProducts) =>
+        prevProducts.map((product) => {
           if (product.id === id) {
             return { ...product, quantity: newQuantity };
           } else {
@@ -31,10 +38,10 @@ function AddProductForm() {
         })
       );
     } catch (error) {
-      console.log(error.response.data); // error message from the server
+      console.log(error.response.data);
     }
   };
-  
+
   function handleDelete(name) {
     axios.delete(`http://localhost:4000/delete-product/${name}`)
       .then(response => {
@@ -56,66 +63,88 @@ function AddProductForm() {
     });
     const data = await response.json();
     console.log('Server response:', data);
+    setProducts((prevProducts) => prevProducts.map((product) => ({ ...product, localQuantity: product.quantity })));
+
   };
 
   return (
     <div>
       <Appheader/>
-    <form onSubmit={handleSubmit}>
-      <label>
-        Name:
-        <input
-          type="text"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-        />
-      </label>
-      <label>
-        Quantity:
-        <input
-          type="number"
-          value={quantity}
-          onChange={(event) => setQuantity(Number(event.target.value))}
-        />
-      </label>
-                <button type="submit">Add Product</button>
+      <div className={styles['form-container']}>
+        <form onSubmit={handleSubmit}>
+          <label className={styles['form-label']}>
+           שם המוצר
+            <br/>
 
-    </form>  
-
-    <div>
-  <table>
-    <thead>
-      <tr>
-        <th>name</th>
-        <th>quantity</th>
-        <th>Edit quantity</th>
-      </tr>
-    </thead>
-    <tbody>
-      {products.map((product) => (
-        <tr key={product.id}>
-          <td>{product.name}</td>
-          <td>{product.quantity}</td>
-          <td>
+            <input
+              type="text"
+              className={styles['form-input']}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
+          </label>
+          <label className={styles['form-label']}>
+            כמות במלאי
+            <br/>
             <input
               type="number"
-              defaultValue={product.quantity}
-              onChange={(event) => {
-                const newQuantity = Number(event.target.value);
-                handleUpdate(product.id, newQuantity);
-              }}
-            />
-            <button onClick={() => handleUpdate(product.id, product.quantity)}>Update</button>
-          </td>
-          <td>
-            <button onClick={() => handleDelete(product.id)}>Delete</button>
-          </td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-</div>
+              className={styles['form-input']}
+              onChange={(event) => setQuantity(event.target.value)}
 
+            />
+          </label>
+          <button type="submit" className={styles['form-button']}>
+            הוספת מוצר
+          </button>
+        </form>
+      </div>
+
+    <div>
+    <table className={styles['product-table']}>
+          <thead>
+            <tr>
+              <th>שם</th>
+              <th>כמות במלאי</th>
+              <th>הגדלת כמות</th>
+              <th> מחיקת מוצר</th>
+
+            </tr>
+          </thead>
+          <tbody>
+            {products.map((product) => (
+              <tr key={product.id}>
+                <td>{product.name}</td>
+                <td>{product.quantity}</td>
+                <td>
+                <input
+                    type="text"
+                    className={styles['product-input']}
+                    value={quantity}
+                    onChange={(event) => {
+                      const newQuantity = Number(event.target.value);
+                      handleQuantityChange(product.id, newQuantity);
+                    }}
+                  />
+                  <button
+                    className={styles['product-button']}
+                    onClick={() => handleUpdate(product.id, product.localQuantity)}
+                  >
+                    +
+                  </button>
+                </td>
+                <td>
+                  <button
+                    className={styles['product-button']}
+                    onClick={() => handleDelete(product.id)}
+                  >
+                    למחוק
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import styles from './login.module.css'
 
 const Signup = () => {
   const [username, setUsername] = useState('');
@@ -12,35 +13,42 @@ const Signup = () => {
     try {
       const response = await axios.post('http://localhost:4000/signup', { username, password, userType });
       console.log(response.data);
+      window.location.href = '/'; // Redirect to admin page
+
     } catch (error) {
       console.error('Failed to signup:', error);
     }
   };
 
   return (
-    <div>
-      <h2>Signup</h2>
+    <div className={styles.login}>
+      <h2>רישום ראשוני</h2>
       <form onSubmit={handleSignup}>
         <label>
-          Username:
-          <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} />
+          שם משתמש:
+          <input type="text2" value={username} onChange={(e) => setUsername(e.target.value)} />
         </label>
         <br />
         <label>
-          Password:
+          סיסמא:
+          <br/>
+
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
         </label>
         <br />
         <label>
-          User Type:
+          סוג משתמש:
           <select value={userType} onChange={(e) => setUserType(e.target.value)}>
-            <option value="">Select User Type</option>
-            <option value="admin">Admin</option>
-            <option value="deliveryperson">Delivery Person</option>
+            <option value="">בחר סוג משתמש</option>
+            <option value="admin">מנהל</option>
+            <option value="deliveryperson">שליח</option>
           </select>
+          <br/>
         </label>
         <br />
         <button type="submit">Signup</button>
+        <br/>
+        <a href='/'>to log in</a>
       </form>
     </div>
   );
