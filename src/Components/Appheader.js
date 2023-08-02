@@ -1,19 +1,18 @@
 import React from 'react'
 import styles from './headr.module.css'
-import axios from 'react'
+import axios from 'axios';
 
 const Appheader = () => {
-    const handleLogout = async () => {
-      try {
-        await axios.post('  http://localhost:4000/logout');
-     
-        document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        window.location.href = '/'; 
-      } catch (error) {
-        console.error('Failed to logout:', error);
-      }
-    };
-  
+  const handleLogout = async () => {
+    try {
+      await axios.post('  http://localhost:4000/logout');
+   
+      document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      window.location.href = '/'; 
+    } catch (error) {
+      console.error('Failed to logout:', error);
+    }
+  };
     
   return (
     <div>

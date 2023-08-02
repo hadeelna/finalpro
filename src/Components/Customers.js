@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Appheader from './Appheader';
-import App from '../App';
 const Customers = () => {
   const [customers, setCustomers] = useState([]);
   const [name, setName] = useState('');
@@ -48,21 +47,7 @@ const Customers = () => {
     }
   };
 
-  const updateCustomer = async (customerId) => {
-    const updatedName = prompt('Enter new name:');
-    const updatedPhone_number = prompt('Enter new phone_number:');
 
-    try {
-      const response = await axios.put(`http://localhost:4000/customers/${customerId}`, {
-        name: updatedName,
-        phone_number: updatedPhone_number
-      });
-      console.log(response.data);
-      fetchCustomers();
-    } catch (error) {
-      console.error('Failed to update customer:', error);
-    }
-  };
 
   return (
     <div>
@@ -88,10 +73,9 @@ const Customers = () => {
               <td>{customer.status}</td>
               <td>{customer.deliveryperson_name}</td>
               <td>{customer.payment}</td>
-              {console.log(customer.name)}
-              <td>
-                <button onClick={() => deleteCustomer(customer.id)}>מחיקה</button>
-                <button onClick={() => updateCustomer(customer.id)}>עדכון</button>
+            <td>
+
+                <button onClick={() => deleteCustomer(customer.cid)}>delete</button>
               </td>
             </tr>
           ))}

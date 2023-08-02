@@ -7,13 +7,13 @@ function DeliveryPersonOrders() {
   const [forceUpdate, setForceUpdate] = useState(false);
   const [payment, setPayment] = useState('');
 
-  const handlePaymentChange = (event,orderId) => {
+  const handlePaymentChange = (event, orderId) => {
     const updatedOrders = orders.map((order) =>
       order.id === orderId ? { ...order, payment: event.target.value } : order
     );
     setOrders(updatedOrders);
+    setPayment(event.target.value); // Update the payment state immediately
   };
-
   const submitPayment = async (customerId, newPayment) => {
     try {
       await axios.post(`http://localhost:4000/customers/payment/${customerId}`, { payment: newPayment });
@@ -22,7 +22,6 @@ function DeliveryPersonOrders() {
       console.error('Failed to submit payment:', error);
     }
   };
-
 
 
   useEffect(() => {
@@ -102,7 +101,7 @@ function DeliveryPersonOrders() {
               <td>{order.payment}</td>
               <td>
 
-              <input type="text" value={payment} className={styles.i}onChange={(event) => handlePaymentChange(event, order.id)}
+              <input type="text" value={payment} className={styles.i}onChange={(event) => handlePaymentChange(event, order.cid)}
  />
               <button onClick={() => submitPayment(order.cid, payment)}>Submit Payment</button>
               </td>

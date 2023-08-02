@@ -12,6 +12,8 @@ h2{
   }
   
     .login{
+
+      background-repeat: no-repeat;
       height: 45%;
       width: 20%;
       position: absolute;

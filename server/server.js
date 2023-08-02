@@ -9,8 +9,8 @@ app.use(bodyParser.urlencoded({ extended: false }));
 const jwt = require('jsonwebtoken');
 app.use(cors());
 const TWILIO_ACCOUNT_SID = 'AC13ac9f199b3db1f18fc64d83e17bb1b4';
-const TWILIO_AUTH_TOKEN = '214d489baa26af07e43638d7bb5a7087';
-const twilioPhoneNumber = '++14325476061';
+const TWILIO_AUTH_TOKEN = '8b4ffd247e015c667d28e180274fb95a';
+const twilioPhoneNumber = '+14325476061';
 
 
 
@@ -69,9 +69,7 @@ app.post('/login', async (req, res) => {
 
       const user = results[0];
 
-      // Compare the password
-      //const saltRounds = 10;
-      //const hashedPassword = await bcrypt.hash(password, saltRounds);
+
       console.log(user.password)
 
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -675,26 +673,12 @@ app.get('/customers/:deliverypersonName', (req, res) => {
 
 
 
-// מסלול PUT לעדכון פרטי לקוח
-app.put('/customers/:customerId', (req, res) => {
-  const customerId = req.params.customerId;
-  const { name, phone_number } = req.body;
-  const updateQuery = 'UPDATE customers SET cuname = ?, phone_number = ? WHERE id = ?';
-  const values = [name, phone_number, customerId];
 
-  connection.query(updateQuery, values, (error, results) => {
-    if (error) {
-      console.error('Failed to update customer:', error);
-      return res.status(500).json({ message: 'Failed to update customer' });
-    }
-    res.json({ message: 'Customer updated successfully' });
-  });
-});
 
 // מסלול DELETE למחיקת לקוח
 app.delete('/customers/:customerId', (req, res) => {
   const customerId = req.params.customerId;
-  const deleteQuery = 'DELETE FROM customers WHERE id = ?';
+  const deleteQuery = 'DELETE FROM customers WHERE cid = ?';
 
   connection.query(deleteQuery, customerId, (error, results) => {
     if (error) {

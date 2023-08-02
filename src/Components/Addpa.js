@@ -29,7 +29,7 @@ function Addpa() {
     axios.post('http://localhost:4000/Add-pacakge', data)
       .then(response => {
         console.log(response);
-        alert('Product has been added');
+        alert('Package has been added');
       })
       .catch(error => {
         console.log(error);
@@ -44,12 +44,16 @@ function Addpa() {
         type: packageId,
         name: productName,
         quantity: quantity,
+        
       })
+      console.log(type)
       .then(response => {
         console.log(response.data.message);
       })
       .catch(error => {
-        setErrorMessage('Failed to add product to package');
+        setErrorMessage('Failed to add product to package');  
+            console.log(error)
+
       });
   };
   
